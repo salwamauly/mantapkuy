@@ -1,11 +1,287 @@
+```html
 <!DOCTYPE html>
-<html lang="en">
-    <head>
-        
-        <title>salwa</title>
-    </head>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dino Game Offline</title>
 
-    <body>
-        <a>HALO INI SALWA ada 2</a>
-    </body>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background: #f7f7f7;
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .game {
+            width: 900px;
+            height: 300px;
+            background: white;
+            border: 2px solid #333;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .score {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .dino {
+            position: absolute;
+            width: 45px;
+            height: 50px;
+            background: #333;
+            bottom: 30px;
+            left: 80px;
+            border-radius: 5px;
+        }
+
+        .dino::before {
+            content: "";
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background: #333;
+            right: -20px;
+            top: -10px;
+            border-radius: 5px;
+        }
+
+        .dino::after {
+            content: "";
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            background: white;
+            right: -12px;
+            top: -3px;
+        }
+
+        .cactus {
+            position: absolute;
+            width: 25px;
+            height: 50px;
+            background: #228b22;
+            bottom: 30px;
+            right: -30px;
+            border-radius: 5px 5px 0 0;
+        }
+
+        .cactus::before,
+        .cactus::after {
+            content: "";
+            position: absolute;
+            width: 12px;
+            height: 25px;
+            background: #228b22;
+            top: 15px;
+        }
+
+        .cactus::before {
+            left: -10px;
+            border-radius: 5px 0 0 5px;
+        }
+
+        .cactus::after {
+            right: -10px;
+            border-radius: 0 5px 5px 0;
+        }
+
+        .ground {
+            position: absolute;
+            width: 100%;
+            height: 30px;
+            bottom: 0;
+            background: #555;
+        }
+
+        .game-over {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            background: rgba(255,255,255,0.85);
+        }
+
+        .game-over h1 {
+            margin: 0;
+            font-size: 35px;
+        }
+
+        .game-over button {
+            margin-top: 15px;
+            padding: 10px 25px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .jump {
+            animation: jump 0.6s linear;
+        }
+
+        @keyframes jump {
+            0% {
+                bottom: 30px;
+            }
+
+            50% {
+                bottom: 150px;
+            }
+
+            100% {
+                bottom: 30px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="game">
+
+    <div class="score">
+        Score: <span id="score">0</span>
+    </div>
+
+    <div class="dino" id="dino"></div>
+
+    <div class="cactus" id="cactus"></div>
+
+    <div class="ground"></div>
+
+    <div class="game-over" id="gameOver">
+        <h1>GAME OVER</h1>
+        <p>Score kamu: <span id="finalScore">0</span></p>
+        <button onclick="restartGame()">Main Lagi</button>
+    </div>
+
+</div>
+
+<script>
+
+    const dino = document.getElementById("dino");
+    const cactus = document.getElementById("cactus");
+    const scoreText = document.getElementById("score");
+    const gameOverScreen = document.getElementById("gameOver");
+    const finalScore = document.getElementById("finalScore");
+
+    let score = 0;
+    let speed = 6;
+    let gameRunning = true;
+    let cactusPosition = 900;
+
+    // Fungsi lompat
+    function jump() {
+
+        if (!gameRunning) return;
+
+        if (!dino.classList.contains("jump")) {
+
+            dino.classList.add("jump");
+
+            setTimeout(function() {
+                dino.classList.remove("jump");
+            }, 600);
+        }
+    }
+
+    // Tombol keyboard
+    document.addEventListener("keydown", function(event) {
+
+        if (event.code === "Space" || event.code === "ArrowUp") {
+            event.preventDefault();
+            jump();
+        }
+
+    });
+
+    // Gerakan cactus
+    function moveCactus() {
+
+        if (!gameRunning) return;
+
+        cactusPosition -= speed;
+
+        cactus.style.left = cactusPosition + "px";
+
+        // Jika cactus sudah keluar layar
+        if (cactusPosition < -40) {
+
+            cactusPosition = 900;
+
+            score++;
+            scoreText.textContent = score;
+
+            // Setiap 5 score, game semakin cepat
+            if (score % 5 === 0) {
+                speed += 0.5;
+            }
+        }
+
+        // Cek tabrakan
+        const dinoRect = dino.getBoundingClientRect();
+        const cactusRect = cactus.getBoundingClientRect();
+
+        if (
+            dinoRect.right > cactusRect.left + 5 &&
+            dinoRect.left < cactusRect.right - 5 &&
+            dinoRect.bottom > cactusRect.top + 5
+        ) {
+
+            gameOver();
+            return;
+        }
+
+        requestAnimationFrame(moveCactus);
+    }
+
+    // Game Over
+    function gameOver() {
+
+        gameRunning = false;
+
+        finalScore.textContent = score;
+
+        gameOverScreen.style.display = "flex";
+    }
+
+    // Restart game
+    function restartGame() {
+
+        score = 0;
+        speed = 6;
+        cactusPosition = 900;
+        gameRunning = true;
+
+        scoreText.textContent = "0";
+
+        cactus.style.left = "900px";
+
+        gameOverScreen.style.display = "none";
+
+        moveCactus();
+    }
+
+    // Mulai game
+    moveCactus();
+
+</script>
+
+</body>
 </html>
+```
